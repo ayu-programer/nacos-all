@@ -172,7 +172,7 @@ public class DistroProtocol {
         }
         //主要有两种实现
         //DistroClientDataProcessor 主要是对于一些数据变更的处理
-        //
+        //DistroConsistencyServiceImpl 基于事件通知，将数据变更的消息发送给其他的订阅者client
         return dataProcessor.processData(distroData);
     }
     
