@@ -193,7 +193,8 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
                 instance.setWeight(0.01D);
             }
         }
-        
+        //todo 这里有个核心方法 updateIPs 我们可以进去往下看
+        //todo 其实在这里就是如果对各个服务实例的更新操作
         updateIPs(value.getInstanceList(), KeyBuilder.matchEphemeralInstanceListKey(key));
         
         recalculateChecksum();
@@ -278,6 +279,7 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
         }
         
         setLastModifiedMillis(System.currentTimeMillis());
+        //todo 在这里也很清晰 就是会拿到所有的pushService 来去更新服务实例的变更
         getPushService().serviceChanged(this);
         ApplicationUtils.getBean(DoubleWriteEventListener.class).doubleWriteToV2(this, ephemeral);
         StringBuilder stringBuilder = new StringBuilder();

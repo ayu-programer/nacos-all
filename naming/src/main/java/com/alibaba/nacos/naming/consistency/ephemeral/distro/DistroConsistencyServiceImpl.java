@@ -151,6 +151,8 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
 
         //他会在这里发起一个数据变更的通知，有一个event事件通知出去
         //他会把这样的数据找数据的订阅者subscriber订阅者，通过push机制，推送给client
+        //而Notifier本质上其实是个线程thread，这样他就会不停的拿任务来去处理
+        //因此 我们需要找到对应的现线程run方法，去看下是怎么处理的
         notifier.addTask(key, DataOperation.CHANGE);
     }
     
@@ -413,7 +415,10 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
             
             for (; ; ) {
                 try {
+                    //todo 线程处理逻辑
+                    //来到了run方法 我们就知道他是把任务从队列中取出来去执行
                     Pair<String, DataOperation> pair = tasks.take();
+                    //具体执行逻辑见handle
                     handle(pair);
                 } catch (Throwable e) {
                     Loggers.DISTRO.error("[NACOS-DISTRO] Error while handling notifying task", e);
@@ -439,6 +444,9 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
                     count++;
                     
                     try {
+                        //todo 数据变更通知
+                        //来到了handle方法 我们找到了数据变更的通知事件
+                        //发现这里其实是调用了listenr进行处理---进一步看其实是走了Service实现
                         if (action == DataOperation.CHANGE) {
                             listener.onChange(datumKey, dataStore.get(datumKey).value);
                             continue;
