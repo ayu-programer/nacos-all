@@ -96,13 +96,18 @@ public class DistroFilter implements Filter {
                 filterChain.doFilter(req, resp);
                 return;
             }
+            //todo 050--nacos 基于filter服务注册路由转发源码
+            //1 通过http请求 从tag中获取distroTag
+            //默认是通过ip：port来进行路由--》会走DistroPortTagGenerator实现
             String distroTag = distroTagGenerator.getResponsibleTag(req);
-            
+
+            //2 这里是用来判断当前获取的distroTag是否是我自己这台server来处理
             if (distroMapper.responsible(distroTag)) {
                 filterChain.doFilter(req, resp);
                 return;
             }
-            
+
+            //3 下面这里就是判断如果是其他server来处理
             // proxy request to other server if necessary:
             String userAgent = req.getHeader(HttpHeaderConsts.USER_AGENT_HEADER);
             
@@ -113,7 +118,8 @@ public class DistroFilter implements Filter {
                         "receive invalid redirect request from peer " + req.getRemoteAddr());
                 return;
             }
-            
+
+            //获取目标server
             final String targetServer = distroMapper.mapSrv(distroTag);
             
             List<String> headerList = new ArrayList<>(16);
@@ -126,10 +132,13 @@ public class DistroFilter implements Filter {
             
             final String body = IoUtils.toString(req.getInputStream(), Charsets.UTF_8.name());
             final Map<String, String> paramsValue = HttpClient.translateParameterMap(req.getParameterMap());
-            
+
+            //拼装请求 进行路由转化到其他的目标server
             RestResult<String> result = HttpClient
                     .request("http://" + targetServer + req.getRequestURI(), headerList, paramsValue, body,
                             PROXY_CONNECT_TIMEOUT, PROXY_READ_TIMEOUT, Charsets.UTF_8.name(), req.getMethod());
+
+            //获取响应data数据
             String data = result.ok() ? result.getData() : result.getMessage();
             try {
                 WebUtils.response(resp, data, result.getCode());

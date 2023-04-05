@@ -97,7 +97,8 @@ public class DistroMapper extends MemberChangeListener {
         if (lastIndex < 0 || index < 0) {
             return true;
         }
-        
+
+        //todo 而这里就是核心的算法逻辑--即通过hash值在对server数量取余算出目标server到底是谁
         int target = distroHash(responsibleTag) % servers.size();
         return target >= index && target <= lastIndex;
     }
