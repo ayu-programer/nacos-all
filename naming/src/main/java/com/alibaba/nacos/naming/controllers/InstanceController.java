@@ -318,7 +318,9 @@ public class InstanceController {
         String app = WebUtils.optional(request, "app", StringUtils.EMPTY);
         String env = WebUtils.optional(request, "env", StringUtils.EMPTY);
         String tenant = WebUtils.optional(request, "tid", StringUtils.EMPTY);
-        
+
+
+        //这里非常关键，这里其实是一个客户端针对某一个服务的实例数据施加的监听器
         Subscriber subscriber = new Subscriber(clientIP + ":" + udpPort, agent, app, clientIP, namespaceId, serviceName,
                 udpPort, clusters);
         return getInstanceOperator().listInstance(namespaceId, serviceName, subscriber, clusters, healthyOnly);

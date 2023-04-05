@@ -137,6 +137,7 @@ public interface NamingClientProxy extends Closeable {
      * @return current service info of subscribe service
      * @throws NacosException nacos exception
      */
+    //todo 51--Nacos服务实例发起订阅监听源码分析
     ServiceInfo subscribe(String serviceName, String groupName, String clusters) throws NacosException;
     
     /**

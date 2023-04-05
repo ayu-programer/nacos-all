@@ -164,13 +164,18 @@ public class InstanceOperatorServiceImpl implements InstanceOperator {
             boolean healthOnly) throws Exception {
         ClientInfo clientInfo = new ClientInfo(subscriber.getAgent());
         String clientIP = subscriber.getIp();
+
+        //这里是订阅的某个服务
         ServiceInfo result = new ServiceInfo(serviceName, cluster);
+        //然后基于serviceManager 去查出service
         Service service = serviceManager.getService(namespaceId, serviceName);
         long cacheMillis = switchDomain.getDefaultCacheMillis();
         
         // now try to enable the push
         try {
+            //如果说你的subscriber订阅的push接收port端口，你要用port来接收push数据
             if (subscriber.getPort() > 0 && pushService.canEnablePush(subscriber.getAgent())) {
+                //施加一个监听器
                 subscriberServiceV1.addClient(namespaceId, serviceName, cluster, subscriber.getAgent(),
                         new InetSocketAddress(clientIP, subscriber.getPort()), pushDataSource, StringUtils.EMPTY,
                         StringUtils.EMPTY);
@@ -196,6 +201,7 @@ public class InstanceOperatorServiceImpl implements InstanceOperator {
                 .srvIPs(Arrays.asList(StringUtils.split(cluster, StringUtils.COMMA)));
         
         // filter ips using selector:
+        //selector 可以跟我们之前说的cmdb机房标签，在这里根据标签配置，路由规则，来选择同机房标签的服务实例
         if (service.getSelector() != null && StringUtils.isNotBlank(clientIP)) {
             srvedIps = selectorManager.select(service.getSelector(), clientIP, srvedIps);
         }
@@ -211,7 +217,10 @@ public class InstanceOperatorServiceImpl implements InstanceOperator {
             result.setChecksum(service.getChecksum());
             return result;
         }
-        
+
+        //根据健康状态对服务实例做分类
+        //保护阈值就在这里有代码逻辑，如果触发了保护阈值以后，健康和不健康的都返回，
+        //如果没有触发保护阈值，默认返回健康服务实例，但是healthyOnly 如果是false对的话，也会返回不健康的实例
         long total = 0;
         Map<Boolean, List<com.alibaba.nacos.naming.core.Instance>> ipMap = new HashMap<>(2);
         ipMap.put(Boolean.TRUE, new ArrayList<>());
@@ -225,7 +234,9 @@ public class InstanceOperatorServiceImpl implements InstanceOperator {
             ipMap.get(ip.isHealthy()).add(ip);
             total += 1;
         }
-        
+
+
+        //这里是健康保护阈值的判断
         double threshold = service.getProtectThreshold();
         List<Instance> hosts;
         if ((float) ipMap.get(Boolean.TRUE).size() / total <= threshold) {
@@ -237,6 +248,7 @@ public class InstanceOperatorServiceImpl implements InstanceOperator {
                     // set all to `healthy` state to protect
                     .peek(instance -> instance.setHealthy(true)).collect(Collectors.toCollection(LinkedList::new));
         } else {
+            //这里是没有触发健康保护阈值
             result.setReachProtectionThreshold(false);
             hosts = new LinkedList<>(ipMap.get(Boolean.TRUE));
             if (!healthOnly) {

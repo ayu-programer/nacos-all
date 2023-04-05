@@ -413,7 +413,9 @@ public class NamingHttpClientProxy extends AbstractNamingClientProxy {
         
         NacosException exception = new NacosException();
 
-
+        //如果说你的nacos server 三台机器，但是你可以内部配置一个域名解析服务器，
+        //可以给他们配置一个域名，可以基于nginx来实现一个反向代理和负载均衡
+        //这里如果isDomain为true，那么意味着业务系统里配置nacos servers 域名解析代理
         if (serverListManager.isDomain()) {
             String nacosDomain = serverListManager.getNacosDomain();
             for (int i = 0; i < maxRetry; i++) {
@@ -426,6 +428,7 @@ public class NamingHttpClientProxy extends AbstractNamingClientProxy {
                     }
                 }
             }
+            //而else分支意味着 需要从多台nacos server中随机挑选一台server进行发送请求
         } else {
             Random random = new Random(System.currentTimeMillis());
             int index = random.nextInt(servers.size());
