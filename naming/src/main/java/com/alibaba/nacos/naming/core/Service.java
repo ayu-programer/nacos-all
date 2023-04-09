@@ -172,7 +172,8 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
     public boolean matchUnlistenKey(String key) {
         return KeyBuilder.matchInstanceListKey(key, namespaceId, getName());
     }
-    
+
+    //todo 053-Nacos服务实例变更时Push推送源码分析
     @Override
     public void onChange(String key, Instances value) throws Exception {
         
@@ -280,6 +281,7 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
         
         setLastModifiedMillis(System.currentTimeMillis());
         //todo 在这里也很清晰 就是会拿到所有的pushService 来去更新服务实例的变更
+        //todo 获取UdpPushService 也就是在这里会做一个服务变化的通知事件
         getPushService().serviceChanged(this);
         ApplicationUtils.getBean(DoubleWriteEventListener.class).doubleWriteToV2(this, ephemeral);
         StringBuilder stringBuilder = new StringBuilder();

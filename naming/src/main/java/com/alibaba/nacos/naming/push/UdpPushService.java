@@ -127,9 +127,12 @@ public class UdpPushService implements ApplicationContextAware, ApplicationListe
         if (futureMap.containsKey(UtilsAndCommons.assembleFullServiceName(namespaceId, serviceName))) {
             return;
         }
+
+        //默认就是会延迟1s钟，然后去跑任务
         Future future = GlobalExecutor.scheduleUdpSender(() -> {
             try {
                 Loggers.PUSH.info(serviceName + " is changed, add it to push queue.");
+                //会把你注册监听的pushClient都找出来，
                 ConcurrentMap<String, PushClient> clients = subscriberServiceV1.getClientMap()
                         .get(UtilsAndCommons.assembleFullServiceName(namespaceId, serviceName));
                 if (MapUtils.isEmpty(clients)) {
@@ -138,16 +141,20 @@ public class UdpPushService implements ApplicationContextAware, ApplicationListe
                 
                 Map<String, Object> cache = new HashMap<>(16);
                 long lastRefTime = System.nanoTime();
+                //遍历每一个pushclient
                 for (PushClient client : clients.values()) {
+                    //如果client是僵尸进程失活，退出
                     if (client.zombie()) {
                         Loggers.PUSH.debug("client is zombie: " + client);
                         clients.remove(client.toString());
                         Loggers.PUSH.debug("client is zombie: " + client);
                         continue;
                     }
-                    
+
+
                     AckEntry ackEntry;
                     Loggers.PUSH.debug("push serviceName: {} to client: {}", serviceName, client);
+                    //拿到puchKey
                     String key = getPushCacheKey(serviceName, client.getIp(), client.getAgent());
                     byte[] compressData = null;
                     Map<String, Object> data = null;
@@ -162,6 +169,8 @@ public class UdpPushService implements ApplicationContextAware, ApplicationListe
                     if (compressData != null) {
                         ackEntry = prepareAckEntry(client, compressData, data, lastRefTime);
                     } else {
+                        //todo 如果pushclient没有问题，就应该会走到这里，我们进去看
+                        //todo 然后进去看就会发现最后返回-udp传输数据的包对象--即ackEntry
                         ackEntry = prepareAckEntry(client, prepareHostsData(client), lastRefTime);
                         if (ackEntry != null) {
                             cache.put(key,
@@ -172,7 +181,8 @@ public class UdpPushService implements ApplicationContextAware, ApplicationListe
                     Loggers.PUSH.info("serviceName: {} changed, schedule push for: {}, agent: {}, key: {}",
                             client.getServiceName(), client.getAddrStr(), client.getAgent(),
                             (ackEntry == null ? null : ackEntry.getKey()));
-                    
+
+                    //基于ackEntry来执行udpPush操作
                     udpPush(ackEntry);
                 }
             } catch (Exception e) {
@@ -266,6 +276,8 @@ public class UdpPushService implements ApplicationContextAware, ApplicationListe
         String key = AckEntry
                 .getAckKey(socketAddress.getAddress().getHostAddress(), socketAddress.getPort(), lastRefTime);
         try {
+            //todo 准备字节数据---udp传输数据的包
+            //todo 最后返回ackEntry--即UDP的对应的实体对象
             DatagramPacket packet = new DatagramPacket(dataBytes, dataBytes.length, socketAddress);
             AckEntry ackEntry = new AckEntry(key, packet);
             // we must store the key be fore send, otherwise there will be a chance the
@@ -289,6 +301,7 @@ public class UdpPushService implements ApplicationContextAware, ApplicationListe
      * @param service service
      */
     public void serviceChanged(Service service) {
+        //做服务的事件发布通知
         this.applicationContext.publishEvent(new ServiceChangeEvent(this, service));
     }
     
