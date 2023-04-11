@@ -372,13 +372,15 @@ public class UdpPushService implements ApplicationContextAware, ApplicationListe
         result.put("data", dataContent);
         return result;
     }
-    
+
+   //todo 054-Nacos服务实例接收udp协议push数据包源码
     private static AckEntry udpPush(AckEntry ackEntry) {
         if (ackEntry == null) {
             Loggers.PUSH.error("[NACOS-PUSH] ackEntry is null.");
             return null;
         }
-        
+
+        //1 这里首先需要判断下UDP 最大重试次数
         if (ackEntry.getRetryTimes() > Constants.UDP_MAX_RETRY_TIMES) {
             Loggers.PUSH.warn("max re-push times reached, retry times {}, key: {}", ackEntry.getRetryTimes(),
                     ackEntry.getKey());

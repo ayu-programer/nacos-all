@@ -89,7 +89,9 @@ public class PushReceiver implements Runnable, Closeable {
             NAMING_LOGGER.error("[NA] init udp socket failed", e);
         }
     }
-    
+
+    //todo 054-Nacos服务实例接收udp协议push数据包源码
+    //接收方的处理逻辑
     @Override
     public void run() {
         while (!closed) {
@@ -107,6 +109,7 @@ public class PushReceiver implements Runnable, Closeable {
                 PushPacket pushPacket = JacksonUtils.toObj(json, PushPacket.class);
                 String ack;
                 if (PUSH_PACKAGE_TYPE_DOM.equals(pushPacket.type) || PUSH_PACKAGE_TYPE_SERVICE.equals(pushPacket.type)) {
+                    //基于serviceInfoHolder来去处理服务信息
                     serviceInfoHolder.processServiceInfo(pushPacket.data);
                     
                     // send ack to server

@@ -167,6 +167,7 @@ public class ServiceInfoHolder implements Closeable {
                     JacksonUtils.toJson(serviceInfo.getHosts()));
             NotifyCenter.publishEvent(new InstancesChangeEvent(serviceInfo.getName(), serviceInfo.getGroupName(),
                     serviceInfo.getClusters(), serviceInfo.getHosts()));
+            //还支持磁盘文件的写入特性
             DiskCache.write(serviceInfo, cacheDir);
         }
         return serviceInfo;
